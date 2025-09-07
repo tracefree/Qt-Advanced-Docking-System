@@ -167,11 +167,6 @@ QScrollArea#dockWidgetScrollArea {
 /*****************************************************************************
  * Floating widget styling
  *****************************************************************************/
-ads--CFloatingWidgetTitleBar {
-    qproperty-maximizeIcon: url(:/ads/images/maximize-button.svg);
-    qproperty-normalIcon: url(:/ads/images/restore-button.svg);
-}
-
 
 /* does not properly work on KDE
 ads--CFloatingDockContainer[isActiveWindow="true"] ads--CFloatingWidgetTitleBar {

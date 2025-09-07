@@ -425,12 +425,6 @@ struct FloatingDockContainerPrivate
 
 	void setWindowTitle(const QString &Text)
 	{
-#if defined(Q_OS_UNIX) && !defined(Q_OS_MACOS)
-		if (TitleBar)
-		{
-			TitleBar->setTitle(Text);
-		}
-#endif
 		_this->setWindowTitle(Text);
 	}
 
@@ -665,59 +659,9 @@ CFloatingDockContainer::CFloatingDockContainer(CDockManager *DockManager) :
 	QDockWidget::setFeatures(QDockWidget::DockWidgetClosable
 		| QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
 
-	bool native_window = true;
-
-	// FloatingContainerForce*TitleBar is overwritten by the "ADS_UseNativeTitle" environment variable if set.
-	auto env = qgetenv("ADS_UseNativeTitle").toUpper();
-	if (env == "1")
-	{
-		native_window = true;
-	}
-	else if (env == "0")
-	{
-		native_window = false;
-	}
-	else if (DockManager->testConfigFlag(CDockManager::FloatingContainerForceNativeTitleBar))
-	{
-		native_window = true;
-	}
-	else if (DockManager->testConfigFlag(CDockManager::FloatingContainerForceQWidgetTitleBar))
-	{
-		native_window = false;
-	}
-	else
-	{
-		// KDE doesn't seem to fire MoveEvents while moving windows, so for now no native titlebar for everything using KWin.
-		QString window_manager = internal::windowManager().toUpper().split(" ")[0];
-                native_window = window_manager != "KWIN";
-	}
-
-    if (native_window)
-    {
-        // Native windows do not work if wayland is used. Ubuntu 22.04 uses wayland by default. To use
-        // native windows, switch to Xorg
-        QString XdgSessionType = qgetenv("XDG_SESSION_TYPE").toLower();
-        if ("wayland" == XdgSessionType)
-        {
-            native_window = false;
-        }
-    }
-
-	if (native_window)
-	{
-		setTitleBarWidget(new QWidget());
-		setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::CustomizeWindowHint | Qt::WindowCloseButtonHint);
-	}
-	else
-	{
-		d->TitleBar = new CFloatingWidgetTitleBar(this);
-		setTitleBarWidget(d->TitleBar);
-		setWindowFlags(Qt::Window | Qt::WindowMinMaxButtonsHint | Qt::FramelessWindowHint);
-		d->TitleBar->enableCloseButton(isClosable());
-		connect(d->TitleBar, SIGNAL(closeRequested()), SLOT(close()));
-		connect(d->TitleBar, &CFloatingWidgetTitleBar::maximizeRequested,
-				this, &CFloatingDockContainer::onMaximizeRequest);
-	}
+	d->TitleBar = new CFloatingWidgetTitleBar(this);
+	setTitleBarWidget(d->TitleBar);
+	setWindowFlags(Qt::Window | Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
 #else
 	setWindowFlags(
 	    Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint);
@@ -1144,12 +1088,6 @@ bool CFloatingDockContainer::restoreState(CDockingStateReader &Stream,
 		return false;
 	}
 	onDockAreasAddedOrRemoved();
-#if defined(Q_OS_UNIX) && !defined(Q_OS_MACOS)
-	if(d->TitleBar)
-	{
-		d->TitleBar->setMaximizedIcon(windowState() == Qt::WindowMaximized);
-	}
-#endif
 	return true;
 }
 
@@ -1341,10 +1279,6 @@ void CFloatingDockContainer::showNormal(bool fixGeometry)
 			setGeometry(oldNormal);
 		}
 	}
-	if(d->TitleBar)
-	{
-		d->TitleBar->setMaximizedIcon(false);
-	}
 }
 
 
@@ -1352,10 +1286,6 @@ void CFloatingDockContainer::showNormal(bool fixGeometry)
 void CFloatingDockContainer::showMaximized()
 {
 	Super::showMaximized();
-	if (d->TitleBar)
-	{
-		d->TitleBar->setMaximizedIcon(true);
-	}
 }
 
 
